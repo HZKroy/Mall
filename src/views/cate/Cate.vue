@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>种类</h2>
+    <h2>分类</h2>
   </div>
 </template>
 
