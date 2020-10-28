@@ -1,11 +1,16 @@
 <template>
   <div id="homepage">
     <navbar class="home-nav"><div slot="center">购物街</div></navbar>
-    <home-swiper :bannersList="bannersList"></home-swiper>
-    <recommend-view  :recommendsList="recommendsList"></recommend-view>
-    <feature-view></feature-view>
-    <tab-control :titles="['流行','新款','精选']"  class="tab-control"></tab-control>
-    <goods-list></goods-list>
+    <scroll class="content" ref="scroll" :probe-type="3"  @scroll="contentScroll"  :pull-up-load="true"  @pullingUp="loadMore">
+      <home-swiper :bannersList="bannersList"></home-swiper>
+      <recommend-view  :recommendsList="recommendsList"></recommend-view>
+      <feature-view></feature-view>
+      <tab-control :titles="['流行','新款','精选']"  class="tab-control" @tabClick='tabClick()'></tab-control>
+      <goods-list :goods="showGoods"></goods-list>
+    </scroll>
+    <back-top @click.native="backTopClick" v-show="isShowBackTop"></back-top> 
+    <!-- 监听组件的原生事件时，需要加上.native修饰 -->
+    
     <ul>
       <li>100*</li>
       <li>100*</li>
@@ -65,7 +70,9 @@
 
   import Navbar from 'components/common/navbar/Navbar'
   import TabControl from 'components/content/tabControl/TabControl'
-  import GoodsListItem from 'components/content/goods/GoodsList'
+  import GoodsList from 'components/content/goods/GoodsList'
+  import Scroll from 'components/common/scroll/Scroll'
+  import BackTop from 'components/content/backTop/BackTop'
 
   import {getHomepageMultidata,getHomepageGoods} from 'network/homepage'
 
@@ -77,7 +84,9 @@
       RecommendView,
       FeatureView,
       TabControl,
-      GoodsList
+      GoodsList,
+      Scroll,
+      BackTop
     },
     data(){
       return {
@@ -87,7 +96,14 @@
           'pop':{page:0,list:[]},
           'news':{page:0,list:[]},
           'sell':{page:0,list:[]}
-        }
+        },
+        currentType:'pop',
+        isShowBackTop:false
+      }
+    },
+    computed:{
+      showGoods(){
+        return this.goods[this.currentType].list
       }
     },
     created(){
@@ -109,7 +125,33 @@
         getHomepageGoods(type,page).then(res=>{
           this.goods[type].list.push(...res.data.list)
           this.goods[type].page+=1
+
+          this.$ref.scroll.scroll.finishPullUp()
         })
+      },
+      tabClick(index){
+        switch(index){
+          case 0:
+            this.currentType='pop'
+            break
+          case 1:
+            this.currentType='news'
+            break
+          case 2:
+            this.currentType='sell'
+            break
+        }
+      },
+      BackTopClick(){
+        this.$ref.scroll.scroll.scrollTo(0,0,500)
+        console.log('111')
+      },
+      contentScroll(position){
+        this.isShowBackTop=-position.y>1000
+      },
+      loadMore(){
+        this.getHomepageGoods(this.currentType)
+        this.$refs.scroll.scroll.refresh()
       }
     }
   }
@@ -118,6 +160,7 @@
 <style scoped>
 #homepage{
   padding-top: 44px;
+  height: 100vh;
 }
 
 .home-nav{
@@ -133,5 +176,16 @@
 .tab-control{
   position:sticky;
   top: 44px;
+  z-index: 9;
+}
+
+.content{
+  /* height: calc(100%-93px); */
+  overflow: hidden;
+  position: relative;
+  top:44px;
+  bottom:49px;
+  left: 0;
+  right: 0;
 }
 </style>
